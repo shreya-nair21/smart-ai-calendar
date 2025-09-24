@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Smart Scheduler</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        input, button { padding: 8px; margin: 5px; }
+        #tasksList, #scheduleResult { margin-top: 20px; }
+        .task-item { padding: 5px; border-bottom: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+
+<h1>Smart Scheduler</h1>
+
+<h3>Add Task:</h3>
+<input type="text" id="taskInput" placeholder="Task name">
+<input type="number" id="durationInput" placeholder="Duration (hours)">
+<button onclick="addTask()">Add Task</button>
+
+<h3>Tasks:</h3>
+<div id="tasksList"></div>
+
+<button onclick="generateSchedule()">Generate Schedule</button>
+
+<h3>Schedule:</h3>
+<div id="scheduleResult"></div>
+
+<script>
+let tasks = [];
+
+function addTask() {
+    const name = document.getElementById('taskInput').value;
+    const duration = parseFloat(document.getElementById('durationInput').value) || 1;
+    if (!name) { alert("Task name required"); return; }
+    tasks.push({ name, duration });
+    renderTasks();
+}
+
+function renderTasks() {
+    const list = document.getElementById('tasksList');
+    list.innerHTML = '';
+    tasks.forEach((t, i) => {
+        const div = document.createElement('div');
+        div.className = 'task-item';
+        div.innerHTML = `${t.name} - ${t.duration}h <button onclick="removeTask(${i})">Remove</button>`;
+        list.appendChild(div);
+    });
+}
+
+function removeTask(index) {
+    tasks.splice(index, 1);
+    renderTasks();
+}
+
+async function generateSchedule() {
+    if (tasks.length === 0) { alert("Add at least one task"); return; }
+
+    try {
+        const response = await fetch('/schedule', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ tasks })
+        });
+
+        if (!response.ok) {
+            const err = await response.json();
+            alert("Error: " + (err.error || response.statusText));
+            return;
+        }
+
+        const schedule = await response.json();
+        displaySchedule(schedule);
+
+    } catch (error) {
+        alert("Network error: " + error.message);
+    }
+}
+
+function displaySchedule(schedule) {
+    const resultDiv = document.getElementById('scheduleResult');
+    resultDiv.innerHTML = '';
+    for (const task of schedule) {
+        const div = document.createElement('div');
+        div.textContent = `${task.name} - Start: ${task.start_hour}:00, Duration: ${task.duration}h`;
+        resultDiv.appendChild(div);
+    }
+}
+</script>
+
+</body>
+</html>
