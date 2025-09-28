@@ -1,10 +1,14 @@
-# ------------------ Natural language task parser ------------------
+#contains logic: tasks, habits, schedule
+
 import dateparser
 from datetime import datetime, timedelta
 import json
 from os.path import exists
 
 habits_file = "habits.json"
+schedule_file = "schedule.json"
+
+#parser
 
 def parse_task(task_str):
     tokens = task_str.split(" from ")
@@ -23,7 +27,7 @@ def parse_task(task_str):
         "end": end_time.strftime("%H:%M")
     }
 
-# ------------------ Habit tracker ------------------
+#Habit tracker 
 
 def load_habits():
     if exists(habits_file):
@@ -50,30 +54,36 @@ def get_preferred_hour(task_name):
         return None
     return max(habits[task_name], key=habits[task_name].get)
 
-# ------------------ Smart Scheduler ------------------
+# Smart Scheduler
+
+def load_schedule():
+    if exists(schedule_file):
+        with open(schedule_file, "r") as f:
+            return json.load(f)
+    return []
+
+def save_schedule(schedule):
+    with open(schedule_file, "w") as f:
+        json.dump(schedule, f, indent=4)
 
 def smart_schedule(tasks, start_hour=9):
-    """
-    Schedules tasks using preferred hours and updates habits.json automatically
-    """
     schedule = []
     occupied_hours = set()
     current_time = datetime.now().replace(hour=start_hour, minute=0, second=0, microsecond=0)
-    
+
+
     for task in tasks:
         task_name = task.get("task")
         if not task_name:
             continue
         duration = float(task.get("duration", 1))
         
-        # Use preferred hour if available
         preferred_hour = get_preferred_hour(task_name)
         if preferred_hour is not None:
             task_start_hour = int(preferred_hour)
         else:
             task_start_hour = current_time.hour
         
-        # Avoid conflicts
         while any(h in occupied_hours for h in range(task_start_hour, task_start_hour + int(duration))):
             task_start_hour += 1
             if task_start_hour > 23:
@@ -82,33 +92,16 @@ def smart_schedule(tasks, start_hour=9):
         task_start = current_time.replace(hour=task_start_hour, minute=0)
         task_end = task_start + timedelta(hours=duration)
         
-        # Mark hours as occupied
         for h in range(task_start_hour, task_start_hour + int(duration)):
             occupied_hours.add(h % 24)
         
-        # Append to schedule
         schedule.append({
             "task": task_name,
             "start": task_start.strftime("%H:%M"),
             "end": task_end.strftime("%H:%M")
         })
         
-        # Update habits
         update_habits(task_name, task_start_hour)
-        
-        # Move current_time forward + 30-min break
         current_time = task_end + timedelta(minutes=30)
     
     return schedule
-
-# ------------------ Test ------------------
-
-if __name__ == "__main__":
-    task_list = [
-        {"task": "Study", "duration": 2},
-        {"task": "Gym", "duration": 1},
-        {"task": "Meditation", "duration": 1}
-    ]
-    result = smart_schedule(task_list, start_hour=10)
-    print(result)
-    print("Updated habits.json:", load_habits())
