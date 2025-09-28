@@ -1,8 +1,8 @@
 #contains Flask entrypoint
 
 from flask import Flask, request, jsonify,send_from_directory
-from main import parse_task, update_habits, smart_schedule, load_habits, save_schedule, load_schedule
-from auth import register_user, login_user
+from backend.main import parse_task, update_habits, smart_schedule, load_habits, save_schedule, load_schedule
+from backend.auth import register_user, login_user
 
 app = Flask(__name__)
 
