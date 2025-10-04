@@ -1,0 +1,6 @@
+- [x] Update body background to a gradient from light blue to white
+- [x] Change homepage header background to a soft blue
+- [x] Update button colors: signup to green, login to blue
+- [x] Adjust text colors for better contrast
+- [x] Update task input focus color
+- [x] Update task actions colors
