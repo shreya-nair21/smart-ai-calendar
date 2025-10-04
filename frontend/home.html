@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FocusHive - Home</title>
+    <link rel="stylesheet" href="home-styles.css">
+</head>
+<body>
+    <div class="homepage">
+        <header class="homepage-header">
+            <div class="logo">
+                <span class="logo-icon">🐝</span>
+                <span>FocusHive</span>
+            </div>
+            <nav class="nav-links">
+                <a href="home.html" class="active">HOME</a>
+                <a href="schedule.html">MY SCHEDULE</a>
+                <a href="habits.html">HABIT TRACKER</a>
+                <a href="timer.html">TIMER</a>
+            </nav>
+        </header>
+
+        <main class="main-content">
+            <div class="greeting" id="greeting">Good evening, user.</div>
+            
+            <div class="task-section">
+                <h1>What is your next task?</h1>
+                
+                <div class="task-input-wrapper">
+                    <input 
+                        type="text" 
+                        class="task-input" 
+                        id="taskInput" 
+                        placeholder="e.g., Study from 9am to 11am"
+                    >
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="btn-add" onclick="addTask()">ADD TASK</button>
+                    <button class="btn-view" onclick="viewSchedule()">VIEW SCHEDULE</button>
+                </div>
+
+                <div class="status-message" id="statusMessage"></div>
+            </div>
+
+            <div class="tasks-preview" id="tasksPreview">
+                <h2>Today's Tasks</h2>
+                <div id="tasksContainer" class="tasks-container"></div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Update greeting based on time
+        function updateGreeting() {
+    const hour = new Date().getHours();
+    let greeting = 'Good evening';
+    if (hour < 12) greeting = 'Good morning';
+    else if (hour < 18) greeting = 'Good afternoon';
+    
+    const username = localStorage.getItem('username') || 'user';
+    const fullText = `${greeting}, ${username}.`;
+    const greetingEl = document.getElementById('greeting');
+    
+    // Typewriter effect
+    greetingEl.textContent = '';
+    let i = 0;
+    
+    function typeWriter() {
+        if (i < fullText.length) {
+            greetingEl.textContent += fullText.charAt(i);
+            i++;
+            setTimeout(typeWriter, 50); // 50ms delay between each character
+        }
+    }
+    
+    typeWriter();
+}
+
+        // Show status message
+        function showStatus(message, isError = false) {
+            const statusEl = document.getElementById('statusMessage');
+            statusEl.textContent = message;
+            statusEl.className = 'status-message ' + (isError ? 'error' : 'success');
+            statusEl.style.display = 'block';
+            
+            setTimeout(() => {
+                statusEl.style.display = 'none';
+            }, 3000);
+        }
+
+        // Add task
+        async function addTask() {
+            const input = document.getElementById('taskInput');
+            const taskText = input.value.trim();
+            
+            if (!taskText) {
+                showStatus('Please enter a task', true);
+                return;
+            }
+
+            try {
+                const response = await fetch('/parse-task', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ task_input: taskText })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showStatus('Task added successfully!');
+                    input.value = '';
+                    loadTasks();
+                } else {
+                    showStatus(data.error || 'Failed to add task', true);
+                }
+            } catch (error) {
+                showStatus('Error connecting to server', true);
+                console.error('Error:', error);
+            }
+        }
+
+        // Load tasks from schedule
+        async function loadTasks() {
+            try {
+                const response = await fetch('/get-schedule');
+                const schedule = await response.json();
+                
+                const container = document.getElementById('tasksContainer');
+                
+                if (!schedule || schedule.length === 0) {
+                    container.innerHTML = '<div class="empty-state">No tasks scheduled yet. Add your first task above!</div>';
+                    return;
+                }
+
+                container.innerHTML = '';
+                
+                schedule.forEach(task => {
+                    const taskEl = document.createElement('div');
+                    taskEl.className = 'task-item';
+                    taskEl.innerHTML = `
+                        <div class="task-info">
+                            <span class="task-name">${task.task}</span>
+                            <span class="task-time">${task.start} - ${task.end}</span>
+                        </div>
+                        <button class="btn-delete" onclick="deleteTask('${task.task}')">✕</button>
+                    `;
+                    container.appendChild(taskEl);
+                });
+            } catch (error) {
+                console.error('Error loading tasks:', error);
+            }
+        }
+
+        // Delete task
+        async function deleteTask(taskName) {
+            if (!confirm(`Delete "${taskName}"?`)) return;
+
+            try {
+                const response = await fetch('/delete-task', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ task: taskName })
+                });
+
+                if (response.ok) {
+                    showStatus('Task deleted');
+                    loadTasks();
+                } else {
+                    showStatus('Failed to delete task', true);
+                }
+            } catch (error) {
+                showStatus('Error connecting to server', true);
+                console.error('Error:', error);
+            }
+        }
+
+        // View schedule page
+        function viewSchedule() {
+            window.location.href = 'schedule.html';
+        }
+
+        // Enter key support
+        document.getElementById('taskInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addTask();
+        });
+
+        // Initialize
+        updateGreeting();
+        loadTasks();
+    </script>
+</body>
+</html>
