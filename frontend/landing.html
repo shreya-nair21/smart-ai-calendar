@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FocusHive - Habit Tracker</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Landing Page -->
+    <div class="landing-page" id="landingPage">
+        <div class="landing-header">
+            <div class="logo">
+                <span class="logo-icon">🐝</span>
+                <span>FocusHive</span>
+            </div>
+        </div>
+        
+        <div class="landing-content">
+            <h1>Small habits,<br>BIG impact.</h1>
+            <p>FocusHive combines AI intelligence with habit tracking to help you stay focused, consistent, and on top of your life. Build routines that actually stick.</p>
+            
+            <div class="button-group">
+                <button class="btn-signup" onclick="showHomepage()">Sign up</button>
+                <button class="btn-login" onclick="showHomepage()">Log in</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Homepage -->
+    <div class="homepage hidden" id="homepage">
+        <div class="homepage-header">
+            <div class="logo">
+                <span class="logo-icon">🐝</span>
+                <span>FocusHive</span>
+            </div>
+            <nav class="nav-links">
+                <a href="#">Home</a>
+                <a href="#">My Schedule</a>
+                <a href="#">Habit Tracker</a>
+                <a href="#">Timer</a>
+            </nav>
+        </div>
+
+        <div class="main-content">
+            <div class="greeting">Good evening, user.</div>
+            
+            <div class="task-section">
+                <h2>What is your next task?</h2>
+                
+                <div class="task-input-wrapper">
+                    <input 
+                        type="text" 
+                        class="task-input" 
+                        id="taskInput" 
+                        placeholder="Type your task here..."
+                    >
+                </div>
+                
+                <div class="action-buttons">
+                    <button class="btn-add" onclick="addTask()">Add task</button>
+                    <button class="btn-view" onclick="toggleTasks()">View schedule</button>
+                </div>
+
+                <div class="tasks-list hidden" id="tasksList">
+                    <h3>Tasks</h3>
+                    <div id="tasksContainer"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let tasks = [];
+
+        function showHomepage() {
+            document.getElementById('landingPage').classList.add('hidden');
+            document.getElementById('homepage').classList.remove('hidden');
+            updateGreeting();
+        }
+
+        function updateGreeting() {
+            const hour = new Date().getHours();
+            let greeting = 'Good evening';
+            if (hour < 12) greeting = 'Good morning';
+            else if (hour < 18) greeting = 'Good afternoon';
+            document.querySelector('.greeting').textContent = `${greeting}, user.`;
+        }
+
+        function addTask() {
+            const input = document.getElementById('taskInput');
+            const taskText = input.value.trim();
+            
+            if (taskText) {
+                tasks.push({
+                    id: Date.now(),
+                    text: taskText,
+                    completed: false
+                });
+                input.value = '';
+                renderTasks();
+                document.getElementById('tasksList').classList.remove('hidden');
+            }
+        }
+
+        function toggleTasks() {
+            const tasksList = document.getElementById('tasksList');
+            if (tasks.length === 0) {
+                alert('No tasks yet. Add a task to get started!');
+                return;
+            }
+            tasksList.classList.toggle('hidden');
+        }
+
+        function renderTasks() {
+            const container = document.getElementById('tasksContainer');
+            
+            if (tasks.length === 0) {
+                container.innerHTML = '<div class="empty-state">No tasks yet. Add your first task above.</div>';
+                return;
+            }
+            
+            container.innerHTML = '';
+            
+            tasks.forEach(task => {
+                const taskDiv = document.createElement('div');
+                taskDiv.className = `task-item ${task.completed ? 'completed' : ''}`;
+                taskDiv.innerHTML = `
+                    <span class="task-text">${task.text}</span>
+                    <div class="task-actions">
+                        <button class="btn-small btn-complete" onclick="toggleComplete(${task.id})">
+                            ${task.completed ? 'Undo' : 'Done'}
+                        </button>
+                        <button class="btn-small btn-delete" onclick="deleteTask(${task.id})">Delete</button>
+                    </div>
+                `;
+                container.appendChild(taskDiv);
+            });
+        }
+
+        function toggleComplete(id) {
+            const task = tasks.find(t => t.id === id);
+            if (task) {
+                task.completed = !task.completed;
+                renderTasks();
+            }
+        }
+
+        function deleteTask(id) {
+            tasks = tasks.filter(t => t.id !== id);
+            renderTasks();
+            if (tasks.length === 0) {
+                document.getElementById('tasksList').classList.add('hidden');
+            }
+        }
+
+        document.getElementById('taskInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addTask();
+        });
+    </script>
+</body>
+</html>
